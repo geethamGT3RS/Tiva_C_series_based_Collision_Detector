@@ -131,7 +131,7 @@ int16_t MPU6050_ReadAxis(uint8_t reg) {
 void Delay()
 {
     volatile int i;
-    for (i = 0; i < 100000; i++);
+    for (volatile int i = 0; i < 100000; i++);
 }
 
 int main(void) {
