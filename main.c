@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
-#include <stdlib.h>
-#include <stdio.h>
 
-#define MPU6050_ADDR 0x68     // MPU6050 I2C address
-#define ACCEL_XOUT_H 0x3B     // Accelerometer data register
+// MPU6050 I2C address and accelerometer register
+#define MPU6050_ADDR 0x68
+#define ACCEL_XOUT_H 0x3B
 
+// Function to initialize I2C
 void I2C_Init(void) {
     SYSCTL_RCGCI2C_R |= 0x01;           // Enable clock to I2C0
     SYSCTL_RCGCGPIO_R |= 0x02;          // Enable clock to Port B
@@ -19,6 +19,7 @@ void I2C_Init(void) {
     I2C0_MTPR_R = 0x09;                 // Set clock speed
 }
 
+// Function to initialize UART0
 void UART0_Init(void) {
     SYSCTL_RCGCUART_R |= 0x01;          // Enable UART0
     SYSCTL_RCGCGPIO_R |= 0x01;          // Enable PORTA clock
@@ -33,27 +34,78 @@ void UART0_Init(void) {
     GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R & 0xFFFFFF00) | 0x00000011;
 }
 
+// Function to write a single character to UART0
 void UART0_WriteChar(char c) {
     while ((UART0_FR_R & 0x20) != 0);   // Wait for TX buffer to be empty
     UART0_DR_R = c;
 }
 
+// Function to write a string to UART0
 void UART0_WriteString(char* str) {
     while (*str) {
         UART0_WriteChar(*(str++));
     }
 }
 
-void MPU6050_Init(void) {
-    I2C0_MSA_R = (MPU6050_ADDR << 1);   // Set slave address and indicate write
-    I2C0_MDR_R = 0x6B;                  // Register address to power on the MPU6050
-    I2C0_MCS_R = 0x03;                  // START and RUN
-    while (I2C0_MCS_R & 0x01);          // Wait until done
-    I2C0_MDR_R = 0x00;                  // Set power management register to 0
-    I2C0_MCS_R = 0x05;                  // RUN and STOP
-    while (I2C0_MCS_R & 0x01);          // Wait until done
+// Function to write an integer to UART as string (base 10)
+void UART0_WriteInt(int num) {
+    if (num == 0) {
+        UART0_WriteChar('0');
+        return;
+    }
+    char buffer[10];  // Buffer for the number
+    int index = 0;
+
+    // Handle negative numbers
+    if (num < 0) {
+        UART0_WriteChar('-');
+        num = -num;
+    }
+
+    // Convert the integer to a string (reverse order)
+    while (num > 0) {
+        buffer[index++] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    // Send the number in the correct order
+    while (--index >= 0) {
+        UART0_WriteChar(buffer[index]);
+    }
 }
 
+// Function to initialize the MPU6050 sensor
+void MPU6050_Init(void) {
+    I2C0_MSA_R = (MPU6050_ADDR << 1);   // Set slave address
+    I2C0_MDR_R = 0x6B;                  // Power management register
+    I2C0_MCS_R = 0x03;                  // Start and Run I2C transaction (Start + Run)
+
+    // Wait until done
+    while (I2C0_MCS_R & 0x01);
+
+    // Check for errors
+    if (I2C0_MCS_R & 0x02) {
+        I2C0_MCS_R = 0x04;  // Send STOP to recover from error
+        // Handle error (could be timeout or communication failure)
+        return;
+    }
+
+    // Wake up MPU6050 (write to power management register)
+    I2C0_MDR_R = 0x00;
+    I2C0_MCS_R = 0x01;  // Run I2C transaction for wake up
+
+    // Wait until done
+    while (I2C0_MCS_R & 0x01);
+
+    // Check for errors
+    if (I2C0_MCS_R & 0x02) {
+        I2C0_MCS_R = 0x04;  // Send STOP to recover from error
+        // Handle error (could be timeout or communication failure)
+        return;
+    }
+}
+
+// Function to read axis data from MPU6050
 int16_t MPU6050_ReadAxis(uint8_t reg) {
     int16_t axisData;
 
@@ -76,20 +128,37 @@ int16_t MPU6050_ReadAxis(uint8_t reg) {
 
     return axisData;
 }
+void Delay()
+{
+    volatile int i;
+    for (i = 0; i < 100000; i++);
+}
 
 int main(void) {
     I2C_Init();
     UART0_Init();
     MPU6050_Init();
-
     int16_t accelX, accelY, accelZ;
-    char buffer[32];
 
     while (1) {
         accelX = MPU6050_ReadAxis(ACCEL_XOUT_H);
         accelY = MPU6050_ReadAxis(ACCEL_XOUT_H + 2);
         accelZ = MPU6050_ReadAxis(ACCEL_XOUT_H + 4);
-        sprintf(buffer, "X:%d Y:%d Z:%d\n", accelX, accelY, accelZ);
-        UART0_WriteString(buffer);
+
+        // Send X value
+        UART0_WriteString("X: ");
+        UART0_WriteInt(accelX);
+        UART0_WriteString(" ");
+
+        // Send Y value
+        UART0_WriteString("Y: ");
+        UART0_WriteInt(accelY);
+        UART0_WriteString(" ");
+
+        // Send Z value
+        UART0_WriteString("Z: ");
+        UART0_WriteInt(accelZ);
+        UART0_WriteString("\n");
+        Delay();
     }
 }
