@@ -4,6 +4,7 @@
 // MPU6050 I2C address and accelerometer register
 #define MPU6050_ADDR 0x68
 #define ACCEL_XOUT_H 0x3B
+#define THRESHOLD 10000
 
 // Function to initialize I2C
 void I2C_Init(void) {
@@ -105,6 +106,12 @@ void MPU6050_Init(void) {
     }
 }
 
+void LED_Init(void) {
+    SYSCTL_RCGCGPIO_R |= 0x20;
+    GPIO_PORTF_DIR_R |= 0x0E;
+    GPIO_PORTF_DEN_R |= 0x0E;
+}
+
 // Function to read axis data from MPU6050
 int16_t MPU6050_ReadAxis(uint8_t reg) {
     int16_t axisData;
@@ -128,22 +135,88 @@ int16_t MPU6050_ReadAxis(uint8_t reg) {
 
     return axisData;
 }
+
 void Delay()
 {
     volatile int i;
-    for (volatile int i = 0; i < 100000; i++);
+    for (i = 0; i < 100000; i++);
 }
+
+void UpdateLEDs(int16_t x, int16_t y, int16_t z) {
+    GPIO_PORTF_DATA_R &= ~0x0E;
+    if (x > THRESHOLD || x < -THRESHOLD ) {
+        GPIO_PORTF_DATA_R = 0x02;
+    }
+    else if (y > THRESHOLD || y < -THRESHOLD ) {
+        GPIO_PORTF_DATA_R = 0x08;
+    }
+    else if (z > THRESHOLD  || z < -THRESHOLD ) {
+        GPIO_PORTF_DATA_R = 0x04;
+    }
+}
+
+#define COLLISION_THRESHOLD 2000  // Adjust this based on sensitivity requirements
+#define BLINK_COUNT 5  // Number of blinks for each detected collision
+
+// Variables to store previous acceleration values
+int16_t prevX = 0, prevY = 0, prevZ = 0;
+
+void DelayShort() {
+    volatile int i;
+    for (i = 0; i < 50000; i++);  // Short delay for LED blink
+}
+
+void BlinkLED(uint8_t ledMask) {
+    int i;
+    for (i = 0; i < BLINK_COUNT; i++) {
+        GPIO_PORTF_DATA_R |= ledMask;  // Turn on LED
+        DelayShort();
+        GPIO_PORTF_DATA_R &= ~ledMask; // Turn off LED
+        DelayShort();
+    }
+}
+
+void DetectCollision(int16_t x, int16_t y, int16_t z) {
+    // Clear all LEDs initially
+    GPIO_PORTF_DATA_R &= ~0x0E;
+
+    // Check for sudden increase in X-axis acceleration
+    if ((x - prevX > COLLISION_THRESHOLD) || (prevX - x > COLLISION_THRESHOLD)) {
+        BlinkLED(0x02);  // Blink red LED 5 times for X-axis collision
+    }
+
+    // Check for sudden increase in Y-axis acceleration
+    if ((y - prevY > COLLISION_THRESHOLD) || (prevY - y > COLLISION_THRESHOLD)) {
+        BlinkLED(0x08);  // Blink green LED 5 times for Y-axis collision
+    }
+
+    // Check for sudden increase in Z-axis acceleration
+    if ((z - prevZ > COLLISION_THRESHOLD) || (prevZ - z > COLLISION_THRESHOLD)) {
+        BlinkLED(0x04);  // Blink blue LED 5 times for Z-axis collision
+    }
+
+    // Update previous values for the next detection cycle
+    prevX = x;
+    prevY = y;
+    prevZ = z;
+}
+
+
 
 int main(void) {
     I2C_Init();
     UART0_Init();
     MPU6050_Init();
+    LED_Init();
     int16_t accelX, accelY, accelZ;
 
     while (1) {
         accelX = MPU6050_ReadAxis(ACCEL_XOUT_H);
         accelY = MPU6050_ReadAxis(ACCEL_XOUT_H + 2);
         accelZ = MPU6050_ReadAxis(ACCEL_XOUT_H + 4);
+
+        UpdateLEDs(accelX, accelY, accelZ);
+        //DetectCollision(accelX, accelY, accelZ);
 
         // Send X value
         UART0_WriteString("X: ");
