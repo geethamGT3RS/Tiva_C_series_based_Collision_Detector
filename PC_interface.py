@@ -185,6 +185,7 @@ class SerialPlotter(QMainWindow):
             self.acc_ax.set_title('X, Y, Z Acceleration')
             self.acc_ax.set_xlabel('Time (s)')
             self.acc_ax.set_ylabel('Acceleration (g)')
+            self.acc_ax.set_ylim(-2, 2)
             self.acc_ax.legend()
             
             # Plot gyroscope data
@@ -194,6 +195,7 @@ class SerialPlotter(QMainWindow):
             self.gyro_ax.set_title('Gyro Pssi, Phi, Rho')
             self.gyro_ax.set_xlabel('Time (s)')
             self.gyro_ax.set_ylabel('Angular Velocity (°/s)')
+            self.gyro_ax.set_ylim(-250, 250)
             self.gyro_ax.legend()
             
             # Redraw the canvas

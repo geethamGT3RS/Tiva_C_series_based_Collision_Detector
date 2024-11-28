@@ -7,6 +7,8 @@
 #define THRESHOLD 10000
 #define GRAVITY 16384
 #define COLLISION_THRESHOLD 12
+#define T1 0.7
+#define T2 1.1
 
 void I2C_Init(void)
 {
@@ -156,7 +158,6 @@ int main(void)
         gyroY = MPU6050_ReadAxis(GYRO_XOUT_H + 2);
         gyroZ = MPU6050_ReadAxis(GYRO_XOUT_H + 4);
 
-        // Send Accelerometer Data
         UART0_WriteString("X: ");
         UART0_WriteInt(accelX);
         UART0_WriteString(" ");
@@ -166,8 +167,6 @@ int main(void)
         UART0_WriteString("Z: ");
         UART0_WriteInt(accelZ);
         UART0_WriteString(" ");
-
-        // Send Gyroscope Data
         UART0_WriteString("PSSI: ");
         UART0_WriteInt(gyroX);
         UART0_WriteString(" ");
@@ -178,27 +177,36 @@ int main(void)
         UART0_WriteInt(gyroZ);
         UART0_WriteString("\n");
 
-        if (abs(accelX) > GRAVITY * 0.8 && abs(accelX) < GRAVITY * 1.1 &&
-            abs(accelY) < GRAVITY * 0.8 && abs(accelZ) < GRAVITY * 0.8) {
-            GPIO_PORTF_DATA_R = 0x08; // Green LED (PF3) for X-axis
-        } else if (abs(accelY) > GRAVITY * 0.8 && abs(accelY) < GRAVITY * 1.1 &&
-                   abs(accelX) < GRAVITY * 0.8 && abs(accelZ) < GRAVITY * 0.8) {
-            GPIO_PORTF_DATA_R = 0x02; // Red LED (PF1) for Y-axis
-        } else if (abs(accelZ) > GRAVITY * 0.8 && abs(accelZ) < GRAVITY * 1.1 &&
-                   abs(accelX) < GRAVITY * 0.8 && abs(accelY) < GRAVITY * 0.8) {
-            GPIO_PORTF_DATA_R = 0x04; // Blue LED (PF2) for Z-axis
-        } else {
-            GPIO_PORTF_DATA_R = 0x00; // Turn off all LEDs
+        if (abs(accelX) > GRAVITY * 0.8 && abs(accelX) < GRAVITY * 1.3 &&
+            abs(accelY) < GRAVITY * 0.8 && abs(accelZ) < GRAVITY * 0.8)
+        {
+            GPIO_PORTF_DATA_R = 0x08;
         }
-        if (abs(accelX) > GRAVITY * 0.15 * COLLISION_THRESHOLD || abs(accelY) > GRAVITY *  0.15 * COLLISION_THRESHOLD || abs(accelZ) > GRAVITY *  0.15 * COLLISION_THRESHOLD) {
+        else if (abs(accelY) > GRAVITY * 0.8 && abs(accelY) < GRAVITY * 1.3 &&
+                 abs(accelX) < GRAVITY * 0.8 && abs(accelZ) < GRAVITY * 0.8)
+        {
+            GPIO_PORTF_DATA_R = 0x02;
+        }
+        else if (abs(accelZ) > GRAVITY * 0.7 && abs(accelZ) < GRAVITY * 1.3 &&
+                 abs(accelX) < GRAVITY * 0.8 && abs(accelY) < GRAVITY * 0.8)
+        {
+            GPIO_PORTF_DATA_R = 0x04;
+        }
+        else
+        {
+            GPIO_PORTF_DATA_R = 0x0F;
+        }
+        if (abs(accelX) > GRAVITY * 0.15 * COLLISION_THRESHOLD || abs(accelY) > GRAVITY * 0.15 * COLLISION_THRESHOLD || abs(accelZ) > GRAVITY * 0.15 * COLLISION_THRESHOLD)
+        {
             int i;
-            for (i = 0; i < 5; i++) {
-                GPIO_PORTF_DATA_R = 0x06; // Turn on Red LED (PF1)
-                Delay(500000);
-                GPIO_PORTF_DATA_R = 0x00; // Turn off Red LED
-                Delay(500000);
+            for (i = 0; i < 4; i++)
+            {
+                GPIO_PORTF_DATA_R = 0x06;
+                Delay(300000);
+                GPIO_PORTF_DATA_R = 0x00;
+                Delay(300000);
             }
         }
-        Delay(10000);
+        Delay(50000);
     }
 }
