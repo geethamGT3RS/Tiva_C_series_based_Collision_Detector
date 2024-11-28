@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QCom
 from PyQt5.QtCore import QTimer, pyqtSignal, QObject
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import re
 
 class Worker(QObject):
     """Worker class for handling serial data in a separate thread"""
@@ -37,6 +38,9 @@ class SerialPlotter(QMainWindow):
         self.data_x = []
         self.data_y = []
         self.data_z = []
+        self.gyro_pssi = []
+        self.gyro_phi = []
+        self.gyro_rho = []
         
         # Initialize UI
         self.init_ui()
@@ -53,8 +57,8 @@ class SerialPlotter(QMainWindow):
         # Create layout for the graph (left side)
         graph_layout = QVBoxLayout()
         
-        # Plot setup
-        self.figure, self.ax = plt.subplots(figsize=(6, 6), dpi=100)
+        # Plot setup with two subplots for ACC and GYRO
+        self.figure, (self.acc_ax, self.gyro_ax) = plt.subplots(2, 1, figsize=(6, 6), dpi=100)
         self.canvas = FigureCanvas(self.figure)
         graph_layout.addWidget(self.canvas)
         
@@ -128,53 +132,69 @@ class SerialPlotter(QMainWindow):
     
     def display_latest_packet(self, data):
         """Display the most recent data packet in the text display"""
-        # Append the new data to the display and keep the latest 10 packets
         self.data_display.append(f"Received data: {data}")
         if len(self.data_display.toPlainText().splitlines()) > 10:
-            # Remove the first (oldest) line if more than 10 lines
             lines = self.data_display.toPlainText().splitlines()[1:]
             self.data_display.setPlainText('\n'.join(lines))
         
-        # Parse the data to extract X, Y, Z values
         self.parse_data(data)
     
     def parse_data(self, data):
-        """Parse the incoming data and extract X, Y, Z values"""
+        """Parse the incoming data and extract X, Y, Z, and gyro values"""
         try:
             parts = data.split()
+            # Acceleration data
             accel_x = int(parts[1].strip(':')) / 16384  
             accel_y = int(parts[3].strip(':')) / 16384
             accel_z = int(parts[5].strip(':')) / 16384
+            # Gyroscope data
+            gyro_pssi = int(parts[7].strip(':')) / 131
+            gyro_phi = int(parts[9].strip(':')) / 131
+            gyro_rho = int(parts[11].strip(':')) / 131
             
-            # Append the new data to the lists
+            # Append data to lists
             self.data_x.append(accel_x)
             self.data_y.append(accel_y)
             self.data_z.append(accel_z)
+            self.gyro_pssi.append(gyro_pssi)
+            self.gyro_phi.append(gyro_phi)
+            self.gyro_rho.append(gyro_rho)
             
             # Keep only the latest 100 values
             if len(self.data_x) > 100:
                 self.data_x.pop(0)
                 self.data_y.pop(0)
                 self.data_z.pop(0)
+                self.gyro_pssi.pop(0)
+                self.gyro_phi.pop(0)
+                self.gyro_rho.pop(0)
         except Exception as e:
             self.status_label.setText(f"Error parsing data: {str(e)}")
 
     def update_plot(self):
         """Update the plot with the latest data"""
         if self.ser and self.ser.is_open:
-            # Clear previous plot
-            self.ax.clear()
+            # Clear previous plots
+            self.acc_ax.clear()
+            self.gyro_ax.clear()
             
-            # Plot the latest X, Y, and Z acceleration values
-            self.ax.plot(self.data_x, label='X Acceleration', color='r')
-            self.ax.plot(self.data_y, label='Y Acceleration', color='g')
-            self.ax.plot(self.data_z, label='Z Acceleration', color='b')
+            # Plot acceleration data
+            self.acc_ax.plot(self.data_x, label='X Acceleration', color='r')
+            self.acc_ax.plot(self.data_y, label='Y Acceleration', color='g')
+            self.acc_ax.plot(self.data_z, label='Z Acceleration', color='b')
+            self.acc_ax.set_title('X, Y, Z Acceleration')
+            self.acc_ax.set_xlabel('Time (s)')
+            self.acc_ax.set_ylabel('Acceleration (g)')
+            self.acc_ax.legend()
             
-            # Set titles and labels
-            self.ax.set_title('X, Y, Z Acceleration')
-            self.ax.set_xlabel('Time (s)')
-            self.ax.set_ylabel('Acceleration (g)')
-            self.ax.legend()
+            # Plot gyroscope data
+            self.gyro_ax.plot(self.gyro_pssi, label='Pssi (X)', color='c')
+            self.gyro_ax.plot(self.gyro_phi, label='Phi (Y)', color='m')
+            self.gyro_ax.plot(self.gyro_rho, label='Rho (Z)', color='y')
+            self.gyro_ax.set_title('Gyro Pssi, Phi, Rho')
+            self.gyro_ax.set_xlabel('Time (s)')
+            self.gyro_ax.set_ylabel('Angular Velocity (°/s)')
+            self.gyro_ax.legend()
             
             # Redraw the canvas
             self.canvas.draw()

@@ -1,17 +1,17 @@
 ******************************************************************************
                   TI ARM Linker PC v20.2.7                     
 ******************************************************************************
->> Linked Thu Nov  7 14:30:12 2024
+>> Linked Sun Nov 17 23:14:38 2024
 
 OUTPUT FILE NAME:   <course-project.out>
-ENTRY POINT SYMBOL: "_c_int00_noinit_noargs"  address: 00000579
+ENTRY POINT SYMBOL: "_c_int00_noinit_noargs"  address: 0000092d
 
 
 MEMORY CONFIGURATION
 
          name            origin    length      used     unused   attr    fill
 ----------------------  --------  ---------  --------  --------  ----  --------
-  FLASH                 00000000   00040000  000005b8  0003fa48  R  X
+  FLASH                 00000000   00040000  0000096c  0003f694  R  X
   SRAM                  20000000   00008000  00000200  00007e00  RW X
 
 
@@ -19,9 +19,9 @@ SEGMENT ALLOCATION MAP
 
 run origin  load origin   length   init length attrs members
 ----------  ----------- ---------- ----------- ----- -------
-00000000    00000000    000005b8   000005b8    r-x
+00000000    00000000    0000096c   0000096c    r-x
   00000000    00000000    0000026c   0000026c    r-- .intvecs
-  0000026c    0000026c    0000034c   0000034c    r-x .text
+  0000026c    0000026c    00000700   00000700    r-x .text
 20000000    20000000    00000200   00000000    rw-
   20000000    20000000    00000200   00000000    rw- .stack
 
@@ -34,12 +34,16 @@ section   page    origin      length       input sections
 .intvecs   0    00000000    0000026c     
                   00000000    0000026c     tm4c1231h6pm_startup_ccs.obj (.intvecs)
 
-.text      0    0000026c    0000034c     
-                  0000026c    0000030c     main.obj (.text)
-                  00000578    0000002c     rtsv7M4_T_le_v4SPD16_eabi.lib : boot_cortex_m.c.obj (.text:_c_int00_noinit_noargs:_c_int00_noinit_noargs)
-                  000005a4    0000000c     tm4c1231h6pm_startup_ccs.obj (.text)
-                  000005b0    00000004     rtsv7M4_T_le_v4SPD16_eabi.lib : pre_init.c.obj (.text:_system_pre_init)
-                  000005b4    00000004                                   : exit.c.obj (.text:abort:abort)
+.text      0    0000026c    00000700     
+                  0000026c    00000584     main.obj (.text)
+                  000007f0    00000086     rtsv7M4_T_le_v4SPD16_eabi.lib : fd_cmp_t2.asm.obj (.text:__aeabi_cdcmple)
+                  00000876    00000086                                   : fd_cmp_t2.asm.obj (.text:__aeabi_cdrcmple)
+                  000008fc    0000002e                                   : i_tofd_t2.asm.obj (.text)
+                  0000092a    00000002     --HOLE-- [fill = 0]
+                  0000092c    0000002c                                   : boot_cortex_m.c.obj (.text:_c_int00_noinit_noargs:_c_int00_noinit_noargs)
+                  00000958    0000000c     tm4c1231h6pm_startup_ccs.obj (.text)
+                  00000964    00000004     rtsv7M4_T_le_v4SPD16_eabi.lib : pre_init.c.obj (.text:_system_pre_init)
+                  00000968    00000004                                   : exit.c.obj (.text:abort:abort)
 
 .cinit     0    00000000    00000000     UNINITIALIZED
 
@@ -58,37 +62,40 @@ MODULE SUMMARY
        Module                         code   ro data   rw data
        ------                         ----   -------   -------
     .\
-       main.obj                       780    0         0      
+       main.obj                       1412   0         0      
        tm4c1231h6pm_startup_ccs.obj   12     620       0      
     +--+------------------------------+------+---------+---------+
-       Total:                         792    620       0      
+       Total:                         1424   620       0      
                                                               
     C:\ti\ccs1271\ccs\tools\compiler\ti-cgt-arm_20.2.7.LTS\lib\rtsv7M4_T_le_v4SPD16_eabi.lib
+       fd_cmp_t2.asm.obj              268    0         0      
+       i_tofd_t2.asm.obj              46     0         0      
        boot_cortex_m.c.obj            44     0         0      
        exit.c.obj                     4      0         0      
        pre_init.c.obj                 4      0         0      
     +--+------------------------------+------+---------+---------+
-       Total:                         52     0         0      
+       Total:                         366    0         0      
                                                               
        Stack:                         0      0         512    
     +--+------------------------------+------+---------+---------+
-       Grand Total:                   844    620       512    
+       Grand Total:                   1790   620       512    
 
 
 GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name 
 
 address   name                   
 -------   ----                   
-000005b5  C$$EXIT                
-0000047d  Delay                  
+00000969  C$$EXIT                
+0000049d  Delay                  
 0000026d  I2C_Init               
-000003c7  MPU6050_Init           
-00000417  MPU6050_ReadAxis       
-000005a5  ResetISR               
+000003e7  MPU6050_Init           
+00000437  MPU6050_ReadAxis       
+00000317  PortF_Init             
+00000959  ResetISR               
 000002bd  UART0_Init             
-00000317  UART0_WriteChar        
-0000034f  UART0_WriteInt         
-00000333  UART0_WriteString      
+00000337  UART0_WriteChar        
+0000036f  UART0_WriteInt         
+00000353  UART0_WriteString      
 20000200  __STACK_END            
 00000200  __STACK_SIZE           
 20000200  __STACK_TOP            
@@ -96,18 +103,22 @@ ffffffff  __TI_pprof_out_hndl
 ffffffff  __TI_prof_data_size    
 ffffffff  __TI_prof_data_start   
 00000000  __TI_static_base__     
+000007f1  __aeabi_cdcmpeq        
+000007f1  __aeabi_cdcmple        
+00000877  __aeabi_cdrcmple       
+000008fd  __aeabi_i2d            
 ffffffff  __binit__              
 ffffffff  __c_args__             
 UNDEFED   __mpu_init             
 20000000  __stack                
 20000000  __start___llvm_prf_cnts
 20000000  __stop___llvm_prf_cnts 
-00000579  _c_int00_noinit_noargs 
-000005b1  _system_pre_init       
-000005b5  abort                  
+0000092d  _c_int00_noinit_noargs 
+00000965  _system_pre_init       
+00000969  abort                  
 ffffffff  binit                  
 00000000  g_pfnVectors           
-0000049f  main                   
+0000051d  main                   
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -119,18 +130,23 @@ address   name
 00000200  __STACK_SIZE           
 0000026d  I2C_Init               
 000002bd  UART0_Init             
-00000317  UART0_WriteChar        
-00000333  UART0_WriteString      
-0000034f  UART0_WriteInt         
-000003c7  MPU6050_Init           
-00000417  MPU6050_ReadAxis       
-0000047d  Delay                  
-0000049f  main                   
-00000579  _c_int00_noinit_noargs 
-000005a5  ResetISR               
-000005b1  _system_pre_init       
-000005b5  C$$EXIT                
-000005b5  abort                  
+00000317  PortF_Init             
+00000337  UART0_WriteChar        
+00000353  UART0_WriteString      
+0000036f  UART0_WriteInt         
+000003e7  MPU6050_Init           
+00000437  MPU6050_ReadAxis       
+0000049d  Delay                  
+0000051d  main                   
+000007f1  __aeabi_cdcmpeq        
+000007f1  __aeabi_cdcmple        
+00000877  __aeabi_cdrcmple       
+000008fd  __aeabi_i2d            
+0000092d  _c_int00_noinit_noargs 
+00000959  ResetISR               
+00000965  _system_pre_init       
+00000969  C$$EXIT                
+00000969  abort                  
 20000000  __stack                
 20000000  __start___llvm_prf_cnts
 20000000  __stop___llvm_prf_cnts 
@@ -144,4 +160,4 @@ ffffffff  __c_args__
 ffffffff  binit                  
 UNDEFED   __mpu_init             
 
-[29 symbols]
+[34 symbols]
